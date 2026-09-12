@@ -99,7 +99,21 @@ def investigate(subject: str, max_steps: int = 6) -> ClaimTracker:
             findings_log += f"\n- From {r['url']}: {text[:200]}"
             log_step("fetch", f"url={r['url']} | relevance={relevance} | reason={reason}")
 
-    return tracker
+    reflection = reflect_on_findings(subject, tracker)
+    log_step("reflection", reflection)
+    return tracker, reflection
+
+def reflect_on_findings(subject: str, tracker: "ClaimTracker") -> str:
+    evidence_summary = "\n".join(
+        f"- [{e.relevance}] {e.source_url}: {e.text_snippet[:150]}" for e in tracker.evidence
+    ) or "(no usable evidence gathered)"
+    prompt = f"""Subject investigated: {subject}Evidence gathered:{evidence_summary}Computed confidence: {tracker.confidence()} Critically review this investigation. Is the confidence score well-supported by the evidence, or is it based on too little / too ambiguous / too duplicated data? Note any concerns a human analyst should be aware of before trusting this verdict. Respond in 2-3 plain sentences, no JSON."""
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        max_tokens=300,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message.content.strip()
 
 
 if __name__ == "__main__":
