@@ -40,9 +40,10 @@ Respond ONLY with JSON, no other text:
     return parse_json_response(response.choices[0].message.content)
 
 
-def judge_evidence(subject: str, url: str, text: str) -> str:
-    prompt = f"""Subject under investigation: {subject}Text found at {url}:{text[:500]}
-
+def judge_evidence(subject: str, url: str, text: str) -> tuple[str, str]:
+    prompt = f"""Subject under investigation: {subject}
+Text found at {url}:
+{text[:500]}
 Does this text actually mention or provide information about "{subject}" specifically?
 Respond ONLY with JSON, no other text:
 {{"relevance": "supports" or "contradicts" or "irrelevant", "reason": "one short sentence"}}"""
@@ -53,7 +54,7 @@ Respond ONLY with JSON, no other text:
         messages=[{"role": "user", "content": prompt}]
     )
     result = parse_json_response(response.choices[0].message.content)
-    return result["relevance"]
+    return result["relevance"], result.get("reason", "")
 
 
 def investigate(subject: str, max_steps: int = 6) -> ClaimTracker:
@@ -75,14 +76,14 @@ def investigate(subject: str, max_steps: int = 6) -> ClaimTracker:
         for r in results[:2]:
              text = fetch_page(r["url"])
 
-             if not text.strip() or text.startswith("Could not fetch page"):
+             if not text.strip() or text.startswith("Could not fetch page") or "could not be found" in text.lower()[:200]:
                 log_step("skip", f"url={r['url']} | no usable content, excluded from evidence")
                 continue
 
-             relevance = judge_evidence(subject, r["url"], text)
+             relevance, reason = judge_evidence(subject, r["url"], text)
              tracker.add_evidence(r["url"], relevance=relevance, snippet=text[:200])
              findings_log += f"\n- From {r['url']}: {text[:200]}"
-             log_step("fetch", f"url={r['url']} | relevance={relevance}")
+             log_step("fetch", f"url={r['url']} | relevance={relevance} | reason={reason}")
 
     return tracker
 
