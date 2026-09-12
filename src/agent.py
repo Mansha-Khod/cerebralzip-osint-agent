@@ -73,11 +73,16 @@ def investigate(subject: str, max_steps: int = 6) -> ClaimTracker:
         log_step("search", f"query='{query}' | {len(results)} results")
 
         for r in results[:2]:
-            text = fetch_page(r["url"])
-            supports = judge_evidence(subject, r["url"], text)
-            tracker.add_evidence(r["url"], supports=supports, snippet=text[:200])
-            findings_log += f"\n- From {r['url']}: {text[:200]}"
-            log_step("fetch", f"url={r['url']} | judged_supports={supports}")
+             text = fetch_page(r["url"])
+
+             if not text.strip() or text.startswith("Could not fetch page"):
+                log_step("skip", f"url={r['url']} | no usable content, excluded from evidence")
+                continue
+
+             supports = judge_evidence(subject, r["url"], text)
+             tracker.add_evidence(r["url"], supports=supports, snippet=text[:200])
+             findings_log += f"\n- From {r['url']}: {text[:200]}"
+             log_step("fetch", f"url={r['url']} | judged_supports={supports}")
 
     return tracker
 
@@ -86,3 +91,5 @@ if __name__ == "__main__":
     result = investigate("Acme Logistics Pvt Ltd", max_steps=3)
     print("Steps taken, confidence:", result.confidence())
     print("Evidence gathered:", len(result.evidence))
+    for e in result.evidence:
+        print(f"\n[{e.supports}] {e.source_url}\n{e.text_snippet[:150]}")
