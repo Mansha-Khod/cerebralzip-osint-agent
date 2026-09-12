@@ -40,12 +40,12 @@ Respond ONLY with JSON, no other text:
     return parse_json_response(response.choices[0].message.content)
 
 
-def judge_evidence(subject: str, url: str, text: str) -> bool:
-    prompt = f"""Subject under investigation: {subject}
-Text found at {url}:
-{text[:500]}
+def judge_evidence(subject: str, url: str, text: str) -> str:
+    prompt = f"""Subject under investigation: {subject}Text found at {url}:{text[:500]}
 
-Does this text SUPPORT or CONTRADICT the subject being legitimate/trustworthy? Respond ONLY with JSON, no other text: {{"supports": true or false}}"""
+Does this text actually mention or provide information about "{subject}" specifically?
+Respond ONLY with JSON, no other text:
+{{"relevance": "supports" or "contradicts" or "irrelevant", "reason": "one short sentence"}}"""
 
     response = client.chat.completions.create(
         model=MODEL_NAME,
@@ -53,7 +53,7 @@ Does this text SUPPORT or CONTRADICT the subject being legitimate/trustworthy? R
         messages=[{"role": "user", "content": prompt}]
     )
     result = parse_json_response(response.choices[0].message.content)
-    return result["supports"]
+    return result["relevance"]
 
 
 def investigate(subject: str, max_steps: int = 6) -> ClaimTracker:
@@ -79,10 +79,10 @@ def investigate(subject: str, max_steps: int = 6) -> ClaimTracker:
                 log_step("skip", f"url={r['url']} | no usable content, excluded from evidence")
                 continue
 
-             supports = judge_evidence(subject, r["url"], text)
-             tracker.add_evidence(r["url"], supports=supports, snippet=text[:200])
+             relevance = judge_evidence(subject, r["url"], text)
+             tracker.add_evidence(r["url"], relevance=relevance, snippet=text[:200])
              findings_log += f"\n- From {r['url']}: {text[:200]}"
-             log_step("fetch", f"url={r['url']} | judged_supports={supports}")
+             log_step("fetch", f"url={r['url']} | relevance={relevance}")
 
     return tracker
 
