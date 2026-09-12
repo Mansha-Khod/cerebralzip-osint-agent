@@ -13,6 +13,11 @@ from src.claim_tracker import ClaimTracker
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 MODEL_NAME = "openai/gpt-oss-120b"
 
+BLOCKED_DOMAINS = ["linkedin.com", "facebook.com", "instagram.com", "twitter.com", "x.com"]
+
+def is_blocked_domain(url: str) -> bool:
+    return any(d in url for d in BLOCKED_DOMAINS)
+
 
 def parse_json_response(raw: str) :
     raw = raw.strip()
@@ -74,16 +79,20 @@ def investigate(subject: str, max_steps: int = 6) -> ClaimTracker:
         log_step("search", f"query='{query}' | {len(results)} results")
 
         for r in results[:2]:
-             text = fetch_page(r["url"])
+            if is_blocked_domain(r["url"]):
+                log_step("skip", f"url={r['url']} | known scraper-blocked domain, skipped without fetching")
+                continue
 
-             if not text.strip() or text.startswith("Could not fetch page") or "could not be found" in text.lower()[:200]:
+            text = fetch_page(r["url"])
+
+            if not text.strip() or text.startswith("Could not fetch page") or "could not be found" in text.lower()[:200]:
                 log_step("skip", f"url={r['url']} | no usable content, excluded from evidence")
                 continue
 
-             relevance, reason = judge_evidence(subject, r["url"], text)
-             tracker.add_evidence(r["url"], relevance=relevance, snippet=text[:200])
-             findings_log += f"\n- From {r['url']}: {text[:200]}"
-             log_step("fetch", f"url={r['url']} | relevance={relevance} | reason={reason}")
+            relevance, reason = judge_evidence(subject, r["url"], text)
+            tracker.add_evidence(r["url"], relevance=relevance, snippet=text[:200])
+            findings_log += f"\n- From {r['url']}: {text[:200]}"
+            log_step("fetch", f"url={r['url']} | relevance={relevance} | reason={reason}")
 
     return tracker
 
