@@ -26,7 +26,7 @@ def parse_json_response(raw: str) :
 
 
 def decide_next_step(subject: str, findings_so_far: str) -> dict:
-    prompt = f"""You are investigating: {subject}
+    prompt = f"""You are Investigating: {subject}
 Findings gathered so far:
 {findings_so_far if findings_so_far else "(nothing yet)"}
 Respond ONLY with JSON, no other text:
