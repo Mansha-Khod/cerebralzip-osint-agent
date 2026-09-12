@@ -65,6 +65,7 @@ Respond ONLY with JSON, no other text:
 def investigate(subject: str, max_steps: int = 6) -> ClaimTracker:
     tracker = ClaimTracker(claim=subject)
     findings_log = ""
+    seen_urls = set()
 
     for step in range(max_steps):
         decision = decide_next_step(subject, findings_log)
@@ -79,6 +80,10 @@ def investigate(subject: str, max_steps: int = 6) -> ClaimTracker:
         log_step("search", f"query='{query}' | {len(results)} results")
 
         for r in results[:2]:
+            if r["url"] in seen_urls:
+                continue
+            seen_urls.add(r["url"])
+
             if is_blocked_domain(r["url"]):
                 log_step("skip", f"url={r['url']} | known scraper-blocked domain, skipped without fetching")
                 continue
