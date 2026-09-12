@@ -10,4 +10,4 @@ def log_step(action:str,detail:str):
         "detail":detail,
     }
     with open(LOG_FILE,"a") as f:
-        f.write(json.dump(log)+"\n")
+        f.write(json.dumps(log)+"\n")
