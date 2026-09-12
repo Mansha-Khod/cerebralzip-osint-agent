@@ -92,4 +92,5 @@ if __name__ == "__main__":
     print("Steps taken, confidence:", result.confidence())
     print("Evidence gathered:", len(result.evidence))
     for e in result.evidence:
-        print(f"\n[{e.supports}] {e.source_url}\n{e.text_snippet[:150]}")
+        print(f"\n[{e.relevance}] {e.source_url}\n{e.text_snippet[:150]}")
+        
