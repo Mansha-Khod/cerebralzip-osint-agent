@@ -9,6 +9,7 @@ class InvestigationMetrics:
     confidence_progression: list = field(default_factory=list)
     final_confidence: float = 0.0
     reward: float = 0.0
+    converged: bool = False
 
     def step_rewards(self):
         """Per-step reward = change in confidence from the previous step.
@@ -32,3 +33,8 @@ def compute_episode_reward(metrics: "InvestigationMetrics") -> float:
     token_penalty = metrics.total_tokens / 100_000  
     reward = metrics.final_confidence - step_penalty - token_penalty
     return round(max(reward, -1.0), 3)
+
+def has_converged(confidence_progression: list, threshold: float = 0.05) -> bool:
+    if len(confidence_progression) < 3:
+        return False
+    return abs(confidence_progression[-1] - confidence_progression[-2]) < threshold

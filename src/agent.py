@@ -11,7 +11,7 @@ from src.page_fetcher import fetch_page
 from src.logger import log_step
 from src.claim_tracker import ClaimTracker
 from src.memory import get_past_investigation, save_investigation
-from src.metrics import InvestigationMetrics, compute_episode_reward
+from src.metrics import InvestigationMetrics, compute_episode_reward,has_converged
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 MODEL_NAME = "openai/gpt-oss-120b"
@@ -200,6 +200,7 @@ def investigate(subject: str, subject_type: str = "claim", max_steps: int = 6, u
     metrics.steps_taken = steps_used
     metrics.latency_seconds = round(time.time() - start_time, 2)
     metrics.final_confidence = tracker.confidence()
+    metrics.converged = has_converged(metrics.confidence_progression)
     metrics.reward = compute_episode_reward(metrics)
 
     log_step("reflection", reflection)

@@ -37,6 +37,7 @@ def generate_report(subject: str, subject_type: str, tracker: ClaimTracker,
         f"- Total tokens used: {metrics.total_tokens}",
         f"- Latency: {metrics.latency_seconds}s",
         f"- Confidence progression across steps: {metrics.confidence_progression}",
+        f"- Converged: {metrics.converged}",
         f"- Episode reward: {metrics.reward}",
     ]
     with open(filename, "w", encoding="utf-8") as f:
