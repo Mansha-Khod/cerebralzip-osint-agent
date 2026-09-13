@@ -2,7 +2,7 @@ import os
 from datetime import datetime, UTC
 from src.claim_tracker import ClaimTracker, source_reliability
 
-def generate_report(subject: str, subject_type: str, tracker: ClaimTracker, reflection: str, metrics) -> str:
+def generate_report(subject: str, subject_type: str, tracker: ClaimTracker, reflection: str, metrics,narrative) -> str:
     os.makedirs("reports", exist_ok=True)
     timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     filename = f"reports/{subject.replace(' ', '_')}_{timestamp}.md"
@@ -14,18 +14,20 @@ def generate_report(subject: str, subject_type: str, tracker: ClaimTracker, refl
         f"**Verdict:** {tracker.verdict()}  ",
         f"**Confidence Score:** {tracker.confidence()}",
         "",
-        "## Summary",
+        "## Findings",
+        narrative,
+        "",
+        "## Analyst Notes on Confidence",
         reflection,
         "",
-        f"## Evidence ({len(tracker.evidence)} usable sources)",
+        f"## Evidence Log ({len(tracker.evidence)} usable sources)",
     ]
     for e in tracker.evidence:
         reliability = source_reliability(e.source_url)
-        lines.append(f"- **[{e.relevance}]** (source reliability: {reliability}) {e.source_url}")
+        lines.append(f"- **[{e.relevance}]** (reliability: {reliability}) {e.source_url}")
         lines.append(f"  > {e.text_snippet[:400]}")
     if not tracker.evidence:
         lines.append("_No usable evidence was found._")
-
     lines += [
         "",
         "## Investigation Metrics",
@@ -34,8 +36,8 @@ def generate_report(subject: str, subject_type: str, tracker: ClaimTracker, refl
         f"- Total tokens used: {metrics.total_tokens}",
         f"- Latency: {metrics.latency_seconds}s",
         f"- Confidence progression across steps: {metrics.confidence_progression}",
-        f"- Episode reward: {metrics.reward}",
-    ]
+        f"- Episode reward: {metrics.reward}",]
+
 
     with open(filename, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))

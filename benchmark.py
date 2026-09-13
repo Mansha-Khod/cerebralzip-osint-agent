@@ -13,8 +13,8 @@ BENCHMARK_SUBJECTS = [
 def run_benchmark():
     for subject, subject_type in BENCHMARK_SUBJECTS:
         print(f"\nInvestigating: {subject}")
-        tracker, reflection, metrics = investigate(subject)
-        path = generate_report(subject, subject_type, tracker, reflection, metrics)
+        tracker, reflection, narrative,metrics = investigate(subject)
+        path = generate_report(subject, subject_type, tracker, reflection,narrative, metrics)
         print(f"  -> confidence={tracker.confidence()} | reward={metrics.reward} | tokens={metrics.total_tokens} | report={path}")
 
 if __name__ == "__main__":

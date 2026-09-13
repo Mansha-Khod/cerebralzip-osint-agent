@@ -13,8 +13,8 @@ def main():
     args = parser.parse_args()
 
     log_step("start", f"Investigating {args.type}: {args.subject}")
-    tracker, reflection, metrics = investigate(args.subject, use_memory=not args.no_memory)
-    report_path = generate_report(args.subject, args.type, tracker, reflection, metrics)
+    tracker, reflection, narrative, metrics = investigate(args.subject, args.type)
+    report_path = generate_report(args.subject, args.type, tracker, reflection, narrative, metrics)
     print(f"\nReport saved to: {report_path}")
     print(f"Confidence: {tracker.confidence()}")
     print(f"Steps: {metrics.steps_taken} | Tool calls: {metrics.tool_calls} | Tokens: {metrics.total_tokens} | Latency: {metrics.latency_seconds}s")

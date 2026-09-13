@@ -49,8 +49,8 @@ def home():
 
 @app.post("/investigate")
 def run_investigation(req: InvestigateRequest):
-    tracker, reflection, metrics = investigate(req.subject)
-    report_path = generate_report(req.subject, req.subject_type, tracker, reflection, metrics)
+    tracker, reflection, narrative,metrics = investigate(req.subject)
+    report_path = generate_report(req.subject, req.subject_type, tracker, reflection,narrative, metrics)
     return {
         "verdict": tracker.verdict(),
         "confidence": tracker.confidence(),
