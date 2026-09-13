@@ -104,7 +104,7 @@ def write_narrative(subject: str, subject_type: str, tracker: ClaimTracker) -> t
 
     response = client.chat.completions.create(
         model=MODEL_NAME,
-        max_tokens=700,
+        max_tokens=1000,
         messages=[{"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content.strip(), _get_tokens(response)
