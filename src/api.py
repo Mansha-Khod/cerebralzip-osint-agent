@@ -8,14 +8,14 @@ app = FastAPI(title="OSINT Investigation Harness")
 
 class InvestigateRequest(BaseModel):
     subject: str
-    subject_type: str 
+    subject_type: str
 
 @app.get("/", response_class=HTMLResponse)
 def home():
     return """
     <html><body style="font-family: sans-serif; max-width: 600px; margin: 40px auto;">
         <h2>OSINT Investigation Harness</h2>
-        <form action="/investigate" method="post" onsubmit="return submitForm(event)">
+        <form onsubmit="return submitForm(event)">
             <input id="subject" placeholder="Subject to investigate" style="width:100%;padding:8px;" required>
             <br><br>
             <select id="subject_type" style="padding:8px;">
@@ -49,11 +49,12 @@ def home():
 
 @app.post("/investigate")
 def run_investigation(req: InvestigateRequest):
-    tracker, reflection, narrative,metrics = investigate(req.subject)
-    report_path = generate_report(req.subject, req.subject_type, tracker, reflection,narrative, metrics)
+    tracker, reflection, narrative, metrics = investigate(req.subject, subject_type=req.subject_type)
+    report_path = generate_report(req.subject, req.subject_type, tracker, reflection, narrative, metrics)
     return {
         "verdict": tracker.verdict(),
         "confidence": tracker.confidence(),
+        "narrative": narrative,
         "evidence_count": len(tracker.evidence),
         "reflection": reflection,
         "report_file": report_path,
