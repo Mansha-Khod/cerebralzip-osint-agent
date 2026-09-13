@@ -29,13 +29,23 @@ class ClaimTracker:
     def add_evidence(self, url: str, relevance: str, snippet: str):
         self.evidence.append(Evidence(url, relevance, snippet))
 
+    def verdict(self) -> str:
+        relevant = [e for e in self.evidence if e.relevance not in ("irrelevant", "ambiguous_entity")]
+        if not relevant:
+            return "insufficient_evidence"
+        support_score = sum(source_reliability(e.source_url) for e in relevant if e.relevance == "supports")
+        contradict_score = sum(source_reliability(e.source_url) for e in relevant if e.relevance == "contradicts")
+        if support_score == contradict_score:
+            return "inconclusive"
+        return "supported" if support_score > contradict_score else "contradicted"
+
     def confidence(self) -> float:
         relevant = [e for e in self.evidence if e.relevance not in ("irrelevant", "ambiguous_entity")]
         if not relevant:
             return 0.0
-        supporting = [e for e in relevant if e.relevance == "supports"]
-        contradicting = [e for e in relevant if e.relevance == "contradicts"]
-        support_score = sum(source_reliability(e.source_url) for e in supporting)
-        contradict_score = sum(source_reliability(e.source_url) for e in contradicting)
+        support_score = sum(source_reliability(e.source_url) for e in relevant if e.relevance == "supports")
+        contradict_score = sum(source_reliability(e.source_url) for e in relevant if e.relevance == "contradicts")
         total = support_score + contradict_score
-        return round(support_score / total, 2) if total else 0.0
+        if total == 0:
+            return 0.0
+        return round(max(support_score, contradict_score) / total, 2)
