@@ -154,9 +154,13 @@ def investigate(subject: str, subject_type: str = "claim", max_steps: int = 6, u
         log_step("decision", json.dumps(decision))
 
         if decision["action"] == "conclude":
-            log_step("stop", decision["reason"])
-            break
-
+            if not tracker.evidence:
+                log_step("forced_continue", "Model tried to conclude with zero evidence gathered; forcing at least one search")
+                decision["action"] = "search"
+                decision["query"] = subject
+            else:
+                log_step("stop", decision["reason"])
+                break
         query = decision["query"]
         results = search_web(query)
         metrics.tool_calls += 1
