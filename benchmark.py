@@ -5,9 +5,9 @@ from src.agent import investigate
 from src.report import generate_report
 
 BENCHMARK_SUBJECTS = [
-    ("Tata Consultancy Services", "company"),
-    ("Acme Logistics Pvt Ltd", "company"),
-    ("OpenAI released GPT-5 in 2024", "claim"),
+    ("Tata Consultancy Services", "company", "supported"),
+    ("Acme Logistics Pvt Ltd", "company", "insufficient_evidence"), 
+    ("OpenAI released GPT-5 in 2024", "claim", "contradicted"),
 ]
 
 def run_benchmark():
