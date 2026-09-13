@@ -6,9 +6,11 @@ from src.report import generate_report
 
 app = FastAPI(title="OSINT Investigation Harness")
 
+
 class InvestigateRequest(BaseModel):
     subject: str
     subject_type: str
+
 
 @app.get("/", response_class=HTMLResponse)
 def home():
@@ -45,39 +47,53 @@ def home():
         async function submitForm(e) {
             e.preventDefault();
             document.getElementById('result').innerHTML = '<p class="loading">Investigating... this can take 30-60s</p>';
-            const res = await fetch('/investigate', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    subject: document.getElementById('subject').value,
-                    subject_type: document.getElementById('subject_type').value
-                })
-            });
-            const d = await res.json();
-            const evidence = (d.metrics.confidence_progression || []);
-            document.getElementById('result').innerHTML = `
-                <div class="card">
-                    <div class="label">Verdict</div>
-                    <div class="verdict ${d.verdict}">${d.verdict.replace('_',' ')}</div>
-                    <div class="label" style="margin-top:8px;">Confidence: ${d.confidence}</div>
-                </div>
-                <div class="card">
-                    <div class="label">Findings</div>
-                    <p>${d.narrative.replace(/\\n/g, '<br><br>')}</p>
-                </div>
-                <div class="card">
-                    <div class="label">Analyst Notes</div>
-                    <p>${d.reflection}</p>
-                </div>
-                <div class="card">
-                    <div class="label">Metrics</div>
-                    <p>Steps: ${d.metrics.steps_taken} · Tool calls: ${d.metrics.tool_calls} · Tokens: ${d.metrics.total_tokens} · Reward: ${d.metrics.reward}</p>
-                </div>
-            `;
+            try {
+                const res = await fetch('/investigate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        subject: document.getElementById('subject').value,
+                        subject_type: document.getElementById('subject_type').value
+                    })
+                });
+                const d = await res.json();
+                document.getElementById('result').innerHTML = `
+                    <div class="card">
+                        <div class="label">Verdict</div>
+                        <div class="verdict ${d.verdict}">${d.verdict.replace('_',' ')}</div>
+                        <div class="label" style="margin-top:8px;">Confidence: ${d.confidence}</div>
+                    </div>
+                    <div class="card">
+                        <div class="label">Findings</div>
+                        <p>${d.narrative.replace(/\\n/g, '<br><br>')}</p>
+                    </div>
+                    <div class="card">
+                        <div class="label">Analyst Notes</div>
+                        <p>${d.reflection}</p>
+                    </div>
+                    <div class="card">
+                        <div class="label">Metrics</div>
+                        <p>Steps: ${d.metrics.steps_taken} · Tool calls: ${d.metrics.tool_calls} · Tokens: ${d.metrics.total_tokens} · Reward: ${d.metrics.reward}</p>
+                    </div>
+                    <div class="card">
+                        <div class="label">Evidence (${d.evidence.length} sources)</div>
+                        ${d.evidence.map(e => `
+                            <div class="evidence-item">
+                                <strong class="${e.relevance}">[${e.relevance}]</strong><br>
+                                <a href="${e.url}" target="_blank" style="font-size:12px; word-break:break-all;">${e.url}</a>
+                                <p style="font-size:13px; color:#555;">${e.snippet}...</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (err) {
+                document.getElementById('result').innerHTML = `<p style="color:#b3261e;">Error: ${err.message}</p>`;
+            }
         }
         </script>
     </body></html>
     """
+
 
 @app.post("/investigate")
 def run_investigation(req: InvestigateRequest):
@@ -87,8 +103,16 @@ def run_investigation(req: InvestigateRequest):
         "verdict": tracker.verdict(),
         "confidence": tracker.confidence(),
         "narrative": narrative,
-        "evidence_count": len(tracker.evidence),
         "reflection": reflection,
+        "evidence": [
+            {"relevance": e.relevance, "url": e.source_url, "snippet": e.text_snippet[:200]}
+            for e in tracker.evidence
+        ],
         "report_file": report_path,
         "metrics": metrics.__dict__,
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)
