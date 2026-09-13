@@ -65,7 +65,7 @@ Some things in a more complete version of this project were deliberately left ou
 
 - **`subject_type` (company/person/claim) currently only affects report labeling, not investigation strategy.** The agent uses the same prompts and logic regardless of whether the subject is a company, a person, or a claim. A more complete system might check different things depending on type: registration and filings for a company, public role and notable affiliations for a person, direct source verification for a claim. This was noticed when a benchmark "person" case was phrased as a full factual sentence rather than just a name, effectively making it behave like a claim case rather than a genuine person investigation.
 
-- **Deduplication is exact-URL-match only.** Near-duplicate URLs differing in case or formatting (e.g. `Apple_Inc` vs `Apple_inc`) aren't recognized as the same source, so the same underlying page can be counted as multiple independent pieces of evidence.
+-  **Deduplication normalizes case and trailing slashes, but not all URL variations** (e.g. `www.` prefixes, tracking query parameters). A small remaining category of near-duplicate sources could still be counted as independent evidence.
 
 None of the above is claimed as done. They are named specifically so it's clear what a more thorough version would need, rather than left unmentioned.
 

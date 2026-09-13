@@ -186,9 +186,10 @@ def investigate(subject: str, subject_type: str = "claim", max_steps: int = 6, u
         log_step("search", f"query='{query}' | {len(results)} results")
 
         for r in results[:3]:
-            if r["url"] in seen_urls:
+            normalized_url = r["url"].lower().rstrip("/")
+            if normalized_url in seen_urls:
                 continue
-            seen_urls.add(r["url"])
+            seen_urls.add(normalized_url)
 
             if is_blocked_domain(r["url"]):
                 log_step("skip", f"url={r['url']} | known scraper-blocked domain, skipped without fetching")
