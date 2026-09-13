@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, UTC
+from urllib.parse import urlparse
 from src.claim_tracker import ClaimTracker, source_reliability
 
 def generate_report(subject: str, subject_type: str, tracker: ClaimTracker,
@@ -29,6 +30,7 @@ def generate_report(subject: str, subject_type: str, tracker: ClaimTracker,
         lines.append(f"  > {e.text_snippet[:400]}")
     if not tracker.evidence:
         lines.append("_No usable evidence was found._")
+    unique_domains = len(set(urlparse(e.source_url).netloc.lower().replace("www.", "") for e in tracker.evidence))
     lines += [
         "",
         "## Investigation Metrics",
@@ -36,6 +38,8 @@ def generate_report(subject: str, subject_type: str, tracker: ClaimTracker,
         f"- Tool calls: {metrics.tool_calls}",
         f"- Total tokens used: {metrics.total_tokens}",
         f"- Latency: {metrics.latency_seconds}s",
+        f"- Total evidence sources: {len(tracker.evidence)}",
+        f"- Unique domains among sources: {unique_domains}",
         f"- Confidence progression across steps: {metrics.confidence_progression}",
         f"- Converged: {metrics.converged}",
         f"- Episode reward: {metrics.reward}",
