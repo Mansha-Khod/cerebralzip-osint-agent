@@ -46,20 +46,18 @@ Respond ONLY with JSON, no other text:
 
 
 def judge_evidence(subject: str, url: str, text: str) -> tuple[str, str]:
-    prompt = f"""Subject under investigation: {subject}
-Text found at {url}:
-{text[:500]}
-Does this text refer to the SAME specific entity as "{subject}" (not just a similarly-named company)? Minor formatting differences (e.g. "Pvt Ltd" vs "Private Limited" vs the name alone) do NOT count as a mismatch — but a different registration, location, founding date, or industry suggests a DIFFERENT entity with the same name.
-Respond ONLY with JSON, no other text:
-{{"relevance": "supports" or "contradicts" or "irrelevant" or "ambiguous_entity", "reason": "one short sentence"}}"""
-
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        max_tokens=300,
-        messages=[{"role": "user", "content": prompt}]
-    )
-    result = parse_json_response(response.choices[0].message.content)
-    return result["relevance"], result.get("reason", "")
+    prompt = f"""Subject under investigation: {subject}Text found at {url}:{text[:500]}Does this text refer to the SAME specific entity as "{subject}" (not just a similarly-named company)? Minor formatting differences (e.g. "Pvt Ltd" vs "Private Limited" vs the name alone) do NOT count as a mismatch — but a different registration, location, founding date, or industry suggests a DIFFERENT entity with the same name.Respond ONLY with JSON, no other text:{{"relevance": "supports" or "contradicts" or "irrelevant" or "ambiguous_entity", "reason": "one short sentence"}}"""
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            max_tokens=600,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        result = parse_json_response(response.choices[0].message.content)
+        return result["relevance"], result.get("reason", "")
+    except (ValueError, KeyError) as e:
+        log_step("judgment_error", f"url={url} | {e}")
+        return "irrelevant", f"[judgment failed: {e}]"
 
 
 def investigate(subject: str, max_steps: int = 6) -> ClaimTracker:
