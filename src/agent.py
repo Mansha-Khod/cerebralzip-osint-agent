@@ -50,15 +50,21 @@ def _get_tokens(response):
     return getattr(usage, "total_tokens", 0) if usage else 0
 
 def decide_next_step(subject: str, findings_so_far: str) -> tuple[dict, int]:
-    prompt = f"""You are investigating: {subject}Findings gathered so far:{findings_so_far if findings_so_far else "(nothing yet)"}
-    Respond ONLY with JSON, no other text:{{"action": "search" or "conclude", "query": "next search query if action is search, else empty string", "reason": "why"}}"""
+    prompt = f"""You are investigating: {subject}Findings gathered so far: {findings_so_far if findings_so_far else "(nothing yet)"}Respond ONLY with JSON, no other text:
+    {{"action": "search" or "conclude", "query": "next search query if action is search, else empty string", "reason": "why"}}"""
 
     response = client.chat.completions.create(
         model=MODEL_NAME,
-        max_tokens=500,
+        max_tokens=900,
         messages=[{"role": "user", "content": prompt}]
     )
-    return parse_json_response(response.choices[0].message.content), _get_tokens(response)
+    tokens = _get_tokens(response)
+    try:
+        decision = parse_json_response(response.choices[0].message.content)
+    except ValueError as e:
+        log_step("decision_error", f"malformed response, defaulting to search: {e}")
+        decision = {"action": "search", "query": subject, "reason": "fallback after malformed model response"}
+    return decision, tokens
 
 
 def judge_evidence(subject: str, url: str, text: str) -> tuple[str, str, int]:
