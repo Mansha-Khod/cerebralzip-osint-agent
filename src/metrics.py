@@ -29,7 +29,7 @@ def compute_episode_reward(metrics: "InvestigationMetrics", verdict: str = None,
     using confidence as before; an incorrect verdict is penalized in proportion to
     how confident the agent was in that wrong answer. Without ground truth, the
     formula falls back to confidence-only scoring, which is a weaker signal and
-    should be read as such.hehe :)
+    should be read as such.
     """
     step_penalty = 0.02 * metrics.steps_taken
     token_penalty = metrics.total_tokens / 100_000
