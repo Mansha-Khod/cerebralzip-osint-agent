@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import string
 from groq import Groq
 from dotenv import load_dotenv
 
@@ -32,7 +33,13 @@ def is_unusable_content(text: str) -> bool:
     stripped = text.strip()
     if not stripped or len(stripped) < 250:
         return True
-    return any(sig in stripped.lower()[:400] for sig in FAILURE_SIGNATURES)
+    if any(sig in stripped.lower()[:400] for sig in FAILURE_SIGNATURES):
+        return True
+    sample = stripped[:500]
+    printable_ratio = sum(1 for c in sample if c in string.printable) / len(sample)
+    if printable_ratio < 0.85:
+        return True
+    return False
 
 def parse_json_response(raw: str) -> dict:
     raw = raw.strip()
@@ -69,7 +76,13 @@ def decide_next_step(subject: str, findings_so_far: str) -> tuple[dict, int]:
 
 def judge_evidence(subject: str, url: str, text: str) -> tuple[str, str, int]:
     prompt = f"""Subject under investigation: {subject}Text found at {url}:{text[:500]}
-    Does this text refer to the SAME specific entity as "{subject}" (not just a similarly-named company)? Minor formatting differences (e.g. "Pvt Ltd" vs "Private Limited" vs the name alone) do NOT count as a mismatch — but a different registration, location, founding date, or industry suggests a DIFFERENT entity with the same name.
+    Classify this text's relationship to the subject. Use these definitions precisely:
+    - "supports": the text provides information that confirms or is consistent with the subject/claim.
+    - "contradicts": the text provides information that specifically disputes or disproves the subject/claim.
+    - "irrelevant": the text is about a different topic, person, or entity entirely, and says nothing that bears on the subject either way. Use this even if the text happens to appear on a page related to the search — if it doesn't actually discuss the subject, it is irrelevant, NOT contradicts.
+    - "ambiguous_entity": the text may be about a different real-world entity that happens to share the subject's name.
+
+    Does this text refer to the SAME specific entity as "{subject}"? Minor formatting differences (e.g. "Pvt Ltd" vs "Private Limited") do NOT count as a mismatch.
 
     Respond ONLY with JSON, no other text:
     {{"relevance": "supports" or "contradicts" or "irrelevant" or "ambiguous_entity", "reason": "one short sentence"}}"""
