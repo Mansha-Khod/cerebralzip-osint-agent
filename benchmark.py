@@ -9,6 +9,10 @@ BENCHMARK_SUBJECTS = [
     ("Acme Logistics Pvt Ltd", "company", "insufficient_evidence"),
     ("OpenAI released GPT-5 in 2024", "claim", "contradicted"),
     ("Sundar Pichai is the CEO of Google", "person", "supported"),
+    ("Satya Nadella", "person", "supported"),
+    ("Electric vehicles are cheaper to own than gas cars over their lifetime", "claim", "inconclusive"),
+    ("Rabindranath Tagore was a pre-eminent Bengali poet and cultural figure", "claim", "supported"),
+    ("Apple Inc. is a United States-based multinational technology company founded in 1976", "claim", "supported"),
 ]
 
 def run_benchmark():
