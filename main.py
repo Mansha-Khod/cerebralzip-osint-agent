@@ -3,6 +3,7 @@ load_dotenv()
 import argparse
 from src.agent import investigate
 from src.logger import log_step
+from src.report import generate_report
 
 def main():
     parser = argparse.ArgumentParser(description="OSINT investigation harness")
@@ -11,8 +12,10 @@ def main():
     args = parser.parse_args()
 
     log_step("start", f"Investigating {args.type}: {args.subject}")
-
-    tracker = investigate(args.subject)
+    tracker,reflection = investigate(args.subject)
+    report_path = generate_report(args.subject, args.type, tracker, reflection)
+    print(f"\nReport saved to: {report_path}")
+    print(f"Confidence: {tracker.confidence()}")
 
     print(f"\n=== FINDINGS FOR: {args.subject} ===")
     print(f"Total evidence collected: {len(tracker.evidence)}")
