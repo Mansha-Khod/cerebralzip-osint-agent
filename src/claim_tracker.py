@@ -1,15 +1,20 @@
 from dataclasses import dataclass, field
+from urllib.parse import urlparse
 
-TIER_1_OFFICIAL = [".gov", ".gov.in", ".nic.in", "mca.gov.in", ".edu"]
-TIER_2_ESTABLISHED_MEDIA = ["reuters.com", "apnews.com", "bloomberg.com","economictimes.indiatimes.com", "livemint.com","business-standard.com", "theguardian.com", "wikipedia.org"]
+TIER_1_OFFICIAL = ["gov", "gov.in", "nic.in", "mca.gov.in", "edu"]
+TIER_2_ESTABLISHED_MEDIA = ["reuters.com", "apnews.com", "bloomberg.com", "economictimes.indiatimes.com", "livemint.com", "business-standard.com"]
+TIER_2_5_REFERENCE = ["wikipedia.org"]
 TIER_3_BUSINESS_DATA = ["thecompanycheck.com", "mycorporateinfo.com", "zaubacorp.com","tofler.in", "crunchbase.com"]
 
 def source_reliability(url: str) -> float:
-    if any(d in url for d in TIER_1_OFFICIAL):
+    host = urlparse(url).netloc.lower().replace("www.", "")
+    if any(host == d or host.endswith("." + d) for d in TIER_1_OFFICIAL):
         return 1.0
-    if any(d in url for d in TIER_2_ESTABLISHED_MEDIA):
+    if any(host == d for d in TIER_2_ESTABLISHED_MEDIA):
         return 0.8
-    if any(d in url for d in TIER_3_BUSINESS_DATA):
+    if any(host == d for d in TIER_2_5_REFERENCE):
+        return 0.6  # reference source, not primary journalism
+    if any(host == d for d in TIER_3_BUSINESS_DATA):
         return 0.65
     return 0.4
 
