@@ -4,15 +4,18 @@ import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+}
 
 def fetch_page(url: str, max_chars: int = 3000) -> str:
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
     try:
-        response = requests.get(url, headers=headers, timeout=8, verify=False)
+        response = requests.get(url, headers=HEADERS, timeout=8, verify=False)
     except requests.exceptions.SSLError:
         fallback_url = url.replace("https://", "http://")
         try:
-            response = requests.get(fallback_url, headers=headers, timeout=8)
+            response = requests.get(fallback_url, headers=HEADERS, timeout=8)
         except Exception as e:
             return f"Could not fetch page : {e}"
     except Exception as e:
