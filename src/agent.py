@@ -16,14 +16,17 @@ from src.metrics import InvestigationMetrics, compute_episode_reward
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 MODEL_NAME = "openai/gpt-oss-120b"
 BLOCKED_DOMAINS = ["linkedin.com", "facebook.com", "instagram.com", "twitter.com", "x.com"]
-FAILURE_SIGNATURES = ["could not fetch page", "could not be found", "edgesuite.net","reference #", "all rights reserved"]
+FAILURE_SIGNATURES = ["could not fetch page", "could not be found", "edgesuite.net", "reference #","all rights reserved", "enable js", "enable javascript", "unsupported browser","install a current version", "click the box below", "not a robot","content is not available in your region", "disable any ad blocker",]
 
 
 def is_blocked_domain(url: str) -> bool:
     return any(d in url for d in BLOCKED_DOMAINS)
 
 def is_unusable_content(text: str) -> bool:
-    return not text.strip() or any(sig in text.lower()[:300] for sig in FAILURE_SIGNATURES)
+    stripped = text.strip()
+    if not stripped or len(stripped) < 250:
+        return True
+    return any(sig in stripped.lower()[:400] for sig in FAILURE_SIGNATURES)
 
 def parse_json_response(raw: str) -> dict:
     raw = raw.strip()
@@ -80,7 +83,7 @@ def reflect_on_findings(subject: str, tracker: ClaimTracker) -> tuple[str, int]:
     return response.choices[0].message.content.strip(), _get_tokens(response)
 
 
-def investigate(subject: str, max_steps: int = 6, use_memory: bool = True):
+def investigate(subject: str, max_steps: int = 6, use_memory: bool = True,subject_type: str = "claim"):
     tracker = ClaimTracker(claim=subject)
     findings_log = ""
     seen_urls = set()
@@ -133,6 +136,9 @@ def investigate(subject: str, max_steps: int = 6, use_memory: bool = True):
             log_step("fetch", f"url={r['url']} | relevance={relevance} | reason={reason}")
 
         metrics.confidence_progression.append(tracker.confidence())
+    narrative, tok = write_narrative(subject, subject_type, tracker)
+    metrics.total_tokens += tok
+    log_step("narrative", narrative)
 
     reflection, tok = reflect_on_findings(subject, tracker)
     metrics.total_tokens += tok
@@ -148,3 +154,27 @@ def investigate(subject: str, max_steps: int = 6, use_memory: bool = True):
         save_investigation(subject, tracker.confidence(), reflection[:300])
 
     return tracker, reflection, metrics
+
+def write_narrative(subject: str, subject_type: str, tracker: ClaimTracker) -> tuple[str, int]:
+    supporting = [e for e in tracker.evidence if e.relevance == "supports"]
+    contradicting = [e for e in tracker.evidence if e.relevance == "contradicts"]
+    excluded = [e for e in tracker.evidence if e.relevance in ("irrelevant", "ambiguous_entity")]
+
+    evidence_block = "\n".join(
+        f"- [{e.relevance}] {e.source_url}: {e.text_snippet[:300]}" for e in tracker.evidence
+    ) or "(no usable evidence)"
+
+    prompt = f"""You are writing the findings section of an investigation report for a human analyst.Subject: {subject} (type: {subject_type}) Verdict so far: {tracker.verdict()}, confidence: {tracker.confidence()}Evidence gathered:{evidence_block}
+    Write a plain-English findings narrative in exactly three short paragraphs:
+    1. What was investigated and the overall conclusion, in one or two sentences.
+    2. What the evidence actually shows, synthesizing the supporting and contradicting points together (not just restating each source) — {len(supporting)} sources support, {len(contradicting)} contradict.
+    3. What could NOT be verified or was excluded, and why that matters ({len(excluded)} sources were excluded as irrelevant/ambiguous).
+
+    Do not use bullet points. Do not repeat raw URLs. Write as a human analyst would."""
+
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        max_tokens=700,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message.content.strip(), _get_tokens(response)
