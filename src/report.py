@@ -2,7 +2,7 @@ import os
 from datetime import datetime, UTC
 from src.claim_tracker import ClaimTracker
 
-def generate_report(subject: str, subject_type: str, tracker: ClaimTracker, reflection: str) -> str:
+def generate_report(subject: str, subject_type: str, tracker: ClaimTracker, reflection: str, metrics) -> str:
     os.makedirs("reports", exist_ok=True)
     timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
     filename = f"reports/{subject.replace(' ', '_')}_{timestamp}.md"
@@ -21,7 +21,19 @@ def generate_report(subject: str, subject_type: str, tracker: ClaimTracker, refl
     if not tracker.evidence:
         lines.append("_No usable evidence was found._")
 
-    lines += ["", "## Reflection", reflection]
+    lines += [
+        "",
+        "## Metrics",
+        f"- Steps taken: {metrics.steps_taken}",
+        f"- Tool calls: {metrics.tool_calls}",
+        f"- Total tokens used: {metrics.total_tokens}",
+        f"- Latency: {metrics.latency_seconds}s",
+        f"- Confidence progression: {metrics.confidence_progression}",
+        f"- Episode reward: {metrics.reward}",
+        "",
+        "## Reflection",
+        reflection,
+    ]
 
     with open(filename, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
