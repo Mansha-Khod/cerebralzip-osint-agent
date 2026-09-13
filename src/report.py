@@ -8,12 +8,14 @@ def generate_report(subject: str, subject_type: str, tracker: ClaimTracker, refl
     filename = f"reports/{subject.replace(' ', '_')}_{timestamp}.md"
 
     lines = [
-    f"# Investigation Report: {subject}",
-    f"**Type:** {subject_type}  ",
-    f"**Date:** {datetime.now(UTC).isoformat()}  ",
-    f"**Verdict:** {tracker.verdict()}  ",
-    f"**Confidence Score:** {tracker.confidence()}",
-    ...]
+        f"# Investigation Report: {subject}",
+        f"**Type:** {subject_type}  ",
+        f"**Date:** {datetime.now(UTC).isoformat()}  ",
+        f"**Verdict:** {tracker.verdict()}  ",
+        f"**Confidence Score:** {tracker.confidence()}",
+        "",
+        "## Evidence",
+    ]
     for e in tracker.evidence:
         lines.append(f"- **[{e.relevance}]** {e.source_url}")
         lines.append(f"  > {e.text_snippet[:200]}")
