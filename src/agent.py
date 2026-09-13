@@ -16,7 +16,7 @@ from src.metrics import InvestigationMetrics, compute_episode_reward
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 MODEL_NAME = "openai/gpt-oss-120b"
 BLOCKED_DOMAINS = ["linkedin.com", "facebook.com", "instagram.com", "twitter.com", "x.com"]
-FAILURE_SIGNATURES = ["could not fetch page", "could not be found", "edgesuite.net", "reference #"]
+FAILURE_SIGNATURES = ["could not fetch page", "could not be found", "edgesuite.net","reference #", "all rights reserved"]
 
 
 def is_blocked_domain(url: str) -> bool:

@@ -1,6 +1,6 @@
 import os
 from datetime import datetime, UTC
-from src.claim_tracker import ClaimTracker
+from src.claim_tracker import ClaimTracker, source_reliability
 
 def generate_report(subject: str, subject_type: str, tracker: ClaimTracker, reflection: str, metrics) -> str:
     os.makedirs("reports", exist_ok=True)
@@ -14,26 +14,27 @@ def generate_report(subject: str, subject_type: str, tracker: ClaimTracker, refl
         f"**Verdict:** {tracker.verdict()}  ",
         f"**Confidence Score:** {tracker.confidence()}",
         "",
-        "## Evidence",
+        "## Summary",
+        reflection,
+        "",
+        f"## Evidence ({len(tracker.evidence)} usable sources)",
     ]
     for e in tracker.evidence:
-        lines.append(f"- **[{e.relevance}]** {e.source_url}")
-        lines.append(f"  > {e.text_snippet[:200]}")
+        reliability = source_reliability(e.source_url)
+        lines.append(f"- **[{e.relevance}]** (source reliability: {reliability}) {e.source_url}")
+        lines.append(f"  > {e.text_snippet[:400]}")
     if not tracker.evidence:
         lines.append("_No usable evidence was found._")
 
     lines += [
         "",
-        "## Metrics",
+        "## Investigation Metrics",
         f"- Steps taken: {metrics.steps_taken}",
         f"- Tool calls: {metrics.tool_calls}",
         f"- Total tokens used: {metrics.total_tokens}",
         f"- Latency: {metrics.latency_seconds}s",
-        f"- Confidence progression: {metrics.confidence_progression}",
+        f"- Confidence progression across steps: {metrics.confidence_progression}",
         f"- Episode reward: {metrics.reward}",
-        "",
-        "## Reflection",
-        reflection,
     ]
 
     with open(filename, "w", encoding="utf-8") as f:
