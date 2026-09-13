@@ -132,7 +132,7 @@ def reflect_on_findings(subject: str, tracker: ClaimTracker) -> tuple[str, int]:
     return response.choices[0].message.content.strip(), _get_tokens(response)
 
 
-def investigate(subject: str, subject_type: str = "claim", max_steps: int = 6, use_memory: bool = True):
+def investigate(subject: str, subject_type: str = "claim", max_steps: int = 6, use_memory: bool = True, expected_verdict: str = None):
     tracker = ClaimTracker(claim=subject)
     findings_log = ""
     seen_urls = set()
@@ -201,7 +201,7 @@ def investigate(subject: str, subject_type: str = "claim", max_steps: int = 6, u
     metrics.latency_seconds = round(time.time() - start_time, 2)
     metrics.final_confidence = tracker.confidence()
     metrics.converged = has_converged(metrics.confidence_progression)
-    metrics.reward = compute_episode_reward(metrics)
+    metrics.reward = compute_episode_reward(metrics,verdict=tracker.verdict(), expected_verdict=expected_verdict)
 
     log_step("reflection", reflection)
     log_step("metrics", json.dumps(metrics.__dict__))
