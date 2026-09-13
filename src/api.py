@@ -13,24 +13,38 @@ class InvestigateRequest(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 def home():
     return """
-    <html><body style="font-family: sans-serif; max-width: 600px; margin: 40px auto;">
+    <html><head><style>
+        body { font-family: -apple-system, sans-serif; max-width: 640px; margin: 60px auto; padding: 0 20px; color: #1a1a1a; }
+        h2 { font-weight: 600; }
+        input, select, button { font-size: 15px; padding: 10px; border-radius: 6px; border: 1px solid #ccc; }
+        input { width: 100%; box-sizing: border-box; margin-bottom: 12px; }
+        button { background: #1a1a1a; color: white; border: none; cursor: pointer; margin-top: 12px; }
+        button:hover { background: #333; }
+        #result { margin-top: 24px; }
+        .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+        .verdict { font-size: 18px; font-weight: 600; text-transform: capitalize; }
+        .supported { color: #16794c; } .contradicted { color: #b3261e; }
+        .inconclusive, .insufficient_evidence { color: #8a6d00; }
+        .label { font-size: 12px; color: #777; text-transform: uppercase; letter-spacing: 0.05em; }
+        .evidence-item { border-left: 3px solid #ddd; padding-left: 10px; margin: 10px 0; font-size: 14px; }
+        .loading { color: #777; font-style: italic; }
+    </style></head>
+    <body>
         <h2>OSINT Investigation Harness</h2>
         <form onsubmit="return submitForm(event)">
-            <input id="subject" placeholder="Subject to investigate" style="width:100%;padding:8px;" required>
-            <br><br>
-            <select id="subject_type" style="padding:8px;">
+            <input id="subject" placeholder="Subject to investigate" required>
+            <select id="subject_type" style="width:100%; margin-bottom:12px;">
                 <option value="company">Company</option>
                 <option value="person">Person</option>
                 <option value="claim">Claim</option>
             </select>
-            <br><br>
-            <button type="submit" style="padding:8px 16px;">Investigate</button>
+            <button type="submit">Investigate</button>
         </form>
-        <pre id="result" style="white-space: pre-wrap; margin-top: 20px;"></pre>
+        <div id="result"></div>
         <script>
         async function submitForm(e) {
             e.preventDefault();
-            document.getElementById('result').innerText = 'Investigating... this can take 30-60s';
+            document.getElementById('result').innerHTML = '<p class="loading">Investigating... this can take 30-60s</p>';
             const res = await fetch('/investigate', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -39,9 +53,27 @@ def home():
                     subject_type: document.getElementById('subject_type').value
                 })
             });
-            const data = await res.json();
-            document.getElementById('result').innerText = JSON.stringify(data, null, 2);
-            return false;
+            const d = await res.json();
+            const evidence = (d.metrics.confidence_progression || []);
+            document.getElementById('result').innerHTML = `
+                <div class="card">
+                    <div class="label">Verdict</div>
+                    <div class="verdict ${d.verdict}">${d.verdict.replace('_',' ')}</div>
+                    <div class="label" style="margin-top:8px;">Confidence: ${d.confidence}</div>
+                </div>
+                <div class="card">
+                    <div class="label">Findings</div>
+                    <p>${d.narrative.replace(/\\n/g, '<br><br>')}</p>
+                </div>
+                <div class="card">
+                    <div class="label">Analyst Notes</div>
+                    <p>${d.reflection}</p>
+                </div>
+                <div class="card">
+                    <div class="label">Metrics</div>
+                    <p>Steps: ${d.metrics.steps_taken} · Tool calls: ${d.metrics.tool_calls} · Tokens: ${d.metrics.total_tokens} · Reward: ${d.metrics.reward}</p>
+                </div>
+            `;
         }
         </script>
     </body></html>
