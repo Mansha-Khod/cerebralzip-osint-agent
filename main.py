@@ -9,20 +9,16 @@ def main():
     parser = argparse.ArgumentParser(description="OSINT investigation harness")
     parser.add_argument("--subject", required=True, help='What to investigate')
     parser.add_argument("--type", choices=['company', 'person', 'claim'], required=True)
+    parser.add_argument("--no-memory", action="store_true", help="Disable long-term memory recall/save")
     args = parser.parse_args()
 
     log_step("start", f"Investigating {args.type}: {args.subject}")
-    tracker,reflection = investigate(args.subject)
-    report_path = generate_report(args.subject, args.type, tracker, reflection)
+    tracker, reflection, metrics = investigate(args.subject, use_memory=not args.no_memory)
+    report_path = generate_report(args.subject, args.type, tracker, reflection, metrics)
     print(f"\nReport saved to: {report_path}")
     print(f"Confidence: {tracker.confidence()}")
-
-    print(f"\n=== FINDINGS FOR: {args.subject} ===")
-    print(f"Total evidence collected: {len(tracker.evidence)}")
-    print(f"Confidence score: {tracker.confidence()}")
-    for e in tracker.evidence:
-        label = "SUPPORTS" if e.supports else "CONTRADICTS"
-        print(f"\n[{label}] {e.source_url}\n{e.text_snippet}")
+    print(f"Steps: {metrics.steps_taken} | Tool calls: {metrics.tool_calls} | Tokens: {metrics.total_tokens} | Latency: {metrics.latency_seconds}s")
+    print(f"Episode reward: {metrics.reward}")
 
 if __name__ == "__main__":
     main()
