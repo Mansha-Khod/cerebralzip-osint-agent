@@ -87,8 +87,8 @@ def investigate(subject: str, max_steps: int = 6) -> ClaimTracker:
                 continue
 
             text = fetch_page(r["url"])
-
-            if not text.strip() or text.startswith("Could not fetch page") or "could not be found" in text.lower()[:200]:
+            FAILURE_SIGNATURES = ["could not fetch page", "could not be found", "edgesuite.net", "reference #"]
+            if not text.strip() or any(sig in text.lower()[:300] for sig in FAILURE_SIGNATURES):
                 log_step("skip", f"url={r['url']} | no usable content, excluded from evidence")
                 continue
 
