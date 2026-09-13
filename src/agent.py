@@ -166,7 +166,7 @@ def investigate(subject: str, subject_type: str = "claim", max_steps: int = 6, u
         metrics.tool_calls += 1
         log_step("search", f"query='{query}' | {len(results)} results")
 
-        for r in results[:2]:
+        for r in results[:3]:
             if r["url"] in seen_urls:
                 continue
             seen_urls.add(r["url"])
